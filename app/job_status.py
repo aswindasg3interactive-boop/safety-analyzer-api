@@ -4,7 +4,10 @@ from pathlib import Path
 
 def save_job_status(job_dir: Path, status: str, error: str = None):
 
-    payload = {"status": status}
+    payload = {
+        "job_id": job_dir.name,
+        "status": status
+    }
 
     if error:
         payload["error"] = error

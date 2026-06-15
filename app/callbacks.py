@@ -1,14 +1,15 @@
 import requests
 
 
-def send_success_callback(
-    callback_url: str,
-    job_id: str
-):
+def send_success_callback(callback_url: str,job_id: str):
 
     payload = {
         "status": "completed",
-        "job_id": job_id
+        "job_id": job_id,
+        "tracked_video_url":
+            f"/jobs/{job_id}/tracked-video",
+        "events_url":
+            f"/jobs/{job_id}/events"
     }
 
     response = requests.post(

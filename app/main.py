@@ -3,9 +3,7 @@ from fastapi.responses import FileResponse
 
 import threading
 import shutil
-from pathlib import Path
 
-from app.analyzer import analyze_video
 from app.schemas import AnalyzeRequest
 from app.config import MODEL_PATH, VIDEOS_DIR, OUTPUTS_DIR
 from app.worker import process_job
@@ -96,9 +94,7 @@ def get_job(job_id: str):
 
     if snapshots_dir.exists():
         snapshots = sorted([
-            file.name
-            for file in snapshots_dir.glob("*.jpg")
-        ])
+            f"/jobs/{job_id}/snapshots/{file.name}" for file in snapshots_dir.glob("*.jpg")])
 
     status_info = load_job_status(job_dir)
 
@@ -107,7 +103,7 @@ def get_job(job_id: str):
 
     return {
         "job_id": job_id,
-        "status": status_info["status"],
+        "status": status_info.get("status", "unknown"),
         "tracked_video_url": f"/jobs/{job_id}/tracked-video",
         "events_url": f"/jobs/{job_id}/events",
         "snapshots": snapshots
@@ -151,6 +147,30 @@ def get_events(job_id: str):
 
 
 
+@app.get("/jobs/{job_id}/snapshots/{filename}")
+def get_snapshot(
+    job_id: str,
+    filename: str
+):
+
+    snapshot_path = (
+        OUTPUTS_DIR
+        / job_id
+        / "snapshots"
+        / filename
+    )
+
+    if not snapshot_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Snapshot not found: {filename}"
+        )
+
+    return FileResponse(
+        path=str(snapshot_path),
+        media_type="image/jpeg",
+        filename=filename
+    )
 
 
 
