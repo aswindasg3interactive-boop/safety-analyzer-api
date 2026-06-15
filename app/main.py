@@ -73,6 +73,40 @@ def get_video(video_id: str):
 
 
 
+@app.get("/jobs/{job_id}")
+def get_job(job_id: str):
+
+    job_dir = OUTPUTS_DIR / job_id
+
+    if not job_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Job not found: {job_id}"
+        )
+
+    tracked_video = job_dir / "tracked.mp4"
+    events_json = job_dir / "events.json"
+    snapshots_dir = job_dir / "snapshots"
+
+    snapshots = []
+
+    if snapshots_dir.exists():
+        snapshots = sorted([
+            file.name
+            for file in snapshots_dir.glob("*.jpg")
+        ])
+
+    return {
+        "job_id": job_id,
+        "status": "completed",
+        "tracked_video": tracked_video.exists(),
+        "events_json": events_json.exists(),
+        "snapshots": snapshots
+    }
+
+
+
+
 @app.post("/analyze")
 def analyze(request: AnalyzeRequest):
 
