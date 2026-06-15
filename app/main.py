@@ -99,10 +99,46 @@ def get_job(job_id: str):
     return {
         "job_id": job_id,
         "status": "completed",
-        "tracked_video": tracked_video.exists(),
-        "events_json": events_json.exists(),
-        "snapshots": snapshots
-    }
+        "tracked_video_url": f"/jobs/{job_id}/tracked-video",
+        "events_url": f"/jobs/{job_id}/events",
+        "snapshots": snapshots}
+
+
+@app.get("/jobs/{job_id}/tracked-video")
+def get_tracked_video(job_id: str):
+
+    video_path = OUTPUTS_DIR / job_id / "tracked.mp4"
+
+    if not video_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tracked video not found for job: {job_id}"
+        )
+
+    return FileResponse(
+        path=str(video_path),
+        media_type="video/mp4",
+        filename="tracked.mp4"
+    )
+
+
+@app.get("/jobs/{job_id}/events")
+def get_events(job_id: str):
+
+    events_path = OUTPUTS_DIR / job_id / "events.json"
+
+    if not events_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Events file not found for job: {job_id}"
+        )
+
+    return FileResponse(
+        path=str(events_path),
+        media_type="application/json",
+        filename="events.json"
+    )
+
 
 
 
