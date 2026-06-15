@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+
+
 from pathlib import Path
 from app.analyzer import analyze_video
 from app.schemas import AnalyzeRequest
@@ -49,6 +52,24 @@ def list_videos():
     return {
         "videos": sorted(videos)
     }
+
+
+@app.get("/videos/{video_id}")
+def get_video(video_id: str):
+
+    video_path = VIDEOS_DIR / f"{video_id}.mp4"
+
+    if not video_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Video not found: {video_id}"
+        )
+
+    return FileResponse(
+        path=str(video_path),
+        media_type="video/mp4",
+        filename=video_path.name
+    )
 
 
 
