@@ -1,17 +1,20 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
+import threading
 
 from pathlib import Path
 from app.analyzer import analyze_video
 from app.schemas import AnalyzeRequest
 from app.config import MODEL_PATH, VIDEOS_DIR, OUTPUTS_DIR
+from app.worker import process_job
+from app.job_status import (save_job_status,load_job_status)
+
 
 
 app = FastAPI(
     title="Video Safety Analyzer API",
-    version="1.0.0"
-)
+    version="1.0.0")
 
 
 VIDEOS_DIR.mkdir(
@@ -96,12 +99,18 @@ def get_job(job_id: str):
             for file in snapshots_dir.glob("*.jpg")
         ])
 
+    status_info = load_job_status(job_dir)
+
+    if status_info is None:
+        status_info = {"status": "unknown"}
+
     return {
         "job_id": job_id,
-        "status": "completed",
+        "status": status_info["status"],
         "tracked_video_url": f"/jobs/{job_id}/tracked-video",
         "events_url": f"/jobs/{job_id}/events",
-        "snapshots": snapshots}
+        "snapshots": snapshots
+        }
 
 
 @app.get("/jobs/{job_id}/tracked-video")
@@ -146,38 +155,42 @@ def get_events(job_id: str):
 @app.post("/analyze")
 def analyze(request: AnalyzeRequest):
 
-    try:
+    video_path = VIDEOS_DIR / f"{request.video_id}.mp4"
 
-        video_path = VIDEOS_DIR / f"{request.video_id}.mp4"
-
-        if not video_path.exists():
-            raise HTTPException(
-                status_code=404,
-                detail=f"Video not found: {request.video_id}"
-            )
-
-        job_output_dir = OUTPUTS_DIR / request.job_id
-
-        job_output_dir.mkdir(
-            parents=True,
-            exist_ok=True
-        )
-
-        result = analyze_video(
-            video_path=str(video_path),
-            safe_zones=request.safe_zones,
-            restricted_zones=request.restricted_zones,
-            output_dir=str(job_output_dir)
-        )
-
-        return result
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-
+    if not video_path.exists():
         raise HTTPException(
-            status_code=500,
-            detail=str(e)
+            status_code=404,
+            detail=f"Video not found: {request.video_id}"
         )
+
+    job_output_dir = OUTPUTS_DIR / request.job_id
+
+    job_output_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    save_job_status(
+        job_output_dir,
+        "queued"
+    )
+
+    worker_thread = threading.Thread(
+        target=process_job,
+        args=(
+            request.job_id,
+            str(video_path),
+            request.safe_zones,
+            request.restricted_zones,
+            job_output_dir,
+            request.callback_url
+        ),
+        daemon=True
+    )
+
+    worker_thread.start()
+
+    return {
+        "job_id": request.job_id,
+        "status": "queued"
+    }
