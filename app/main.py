@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-
+from pathlib import Path
 from app.analyzer import analyze_video
 from app.schemas import AnalyzeRequest
 from app.config import MODEL_PATH, VIDEOS_DIR, OUTPUTS_DIR
@@ -36,6 +36,20 @@ def health_check():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/videos")
+def list_videos():
+
+    videos = []
+
+    for file in VIDEOS_DIR.glob("*.mp4"):
+        videos.append(file.stem)
+
+    return {
+        "videos": sorted(videos)
+    }
+
 
 
 @app.post("/analyze")
