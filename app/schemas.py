@@ -16,8 +16,7 @@ class Zone(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     job_id: str
-    input_video_path: str
-    output_dir: str
+    video_id: str
 
     safe_zones: List[Zone]
     restricted_zones: List[Zone]

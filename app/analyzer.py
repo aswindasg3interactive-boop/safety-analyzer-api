@@ -5,7 +5,7 @@ import torch
 import os
 import json
 
-from app.config import MODEL_PATH
+from app.config import MODEL_PATH,TRACKED_VIDEO_NAME,SNAPSHOTS_DIR_NAME,EVENTS_JSON_NAME
 
 
 def load_model():
@@ -22,7 +22,7 @@ def load_model():
 def create_output_structure(output_dir: str):
 
     os.makedirs(output_dir, exist_ok=True)
-    snapshots_dir = os.path.join(output_dir,"snapshots")
+    snapshots_dir = os.path.join(output_dir,SNAPSHOTS_DIR_NAME)
     os.makedirs(snapshots_dir,exist_ok=True)
 
     return {"output_dir": output_dir,"snapshots_dir": snapshots_dir}
@@ -200,9 +200,6 @@ def analyze_video(video_path, safe_zones, restricted_zones, output_dir):
             f"Safe={safe_zone_count}")
 
 
-
-
-
         writer.write(frame)
 
 
@@ -295,7 +292,8 @@ def scale_zones(zones, video_width, video_height):
 
 
 def create_video_writer(output_dir, fps, width, height):
-    output_path = os.path.join(output_dir, "tracked.mp4")
+
+    output_path = os.path.join(output_dir,TRACKED_VIDEO_NAME)
 
     writer = cv2.VideoWriter(
         output_path,
@@ -314,7 +312,7 @@ def bbox_bottom_center(box):
 
 
 def save_report(output_dir, timeline):
-    report_path = os.path.join(output_dir,"report.json")
+    report_path = os.path.join(output_dir,EVENTS_JSON_NAME)
 
     with open(report_path, "w") as f:
         json.dump(timeline,f,indent=4)
@@ -334,9 +332,10 @@ def get_redzone_alert(previous_count, current_count):
 
 
 def save_snapshot(frame, snapshots_dir, second, alert):
+
     filename = f"sec_{second}_{alert}.jpg"
 
     snapshot_path = os.path.join(snapshots_dir,filename)
-
     cv2.imwrite(snapshot_path, frame)
+
     return snapshot_path
