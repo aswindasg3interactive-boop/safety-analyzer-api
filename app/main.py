@@ -2,8 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 import threading
-
+import shutil
 from pathlib import Path
+
 from app.analyzer import analyze_video
 from app.schemas import AnalyzeRequest
 from app.config import MODEL_PATH, VIDEOS_DIR, OUTPUTS_DIR
@@ -152,6 +153,9 @@ def get_events(job_id: str):
 
 
 
+
+
+
 @app.post("/analyze")
 def analyze(request: AnalyzeRequest):
 
@@ -164,6 +168,9 @@ def analyze(request: AnalyzeRequest):
         )
 
     job_output_dir = OUTPUTS_DIR / request.job_id
+
+    if job_output_dir.exists():
+        shutil.rmtree(job_output_dir)
 
     job_output_dir.mkdir(
         parents=True,
