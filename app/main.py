@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 
 import threading
 import shutil
@@ -11,9 +13,21 @@ from app.job_status import (save_job_status,load_job_status)
 
 
 
+
+
 app = FastAPI(
     title="Video Safety Analyzer API",
     version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # for testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 
 VIDEOS_DIR.mkdir(
