@@ -1,50 +1,41 @@
-from app.analyzer import analyze_video
-from app.job_status import save_job_status
-from app.callbacks import (
-    send_success_callback,
-    send_failure_callback
-)
+import requests
 
 
-def process_job(
-    job_id,
-    video_path,
-    safe_zones,
-    restricted_zones,
-    output_dir,
-    callback_url=None
+def send_success_callback(
+    callback_url: str,
+    job_id: str
 ):
 
-    try:
+    payload = {
+        "status": "completed",
+        "job_id": job_id
+    }
 
-        save_job_status(output_dir, "processing")
+    response = requests.post(
+        callback_url,
+        json=payload,
+        timeout=10
+    )
 
-        analyze_video(
-            video_path=video_path,
-            safe_zones=safe_zones,
-            restricted_zones=restricted_zones,
-            output_dir=str(output_dir)
-        )
+    return response.status_code
 
-        save_job_status(output_dir, "completed")
 
-        if callback_url:
-            send_success_callback(
-                callback_url,
-                job_id
-            )
+def send_failure_callback(
+    callback_url: str,
+    job_id: str,
+    error_message: str
+):
 
-    except Exception as e:
+    payload = {
+        "status": "failed",
+        "job_id": job_id,
+        "error": error_message
+    }
 
-        save_job_status(
-            output_dir,
-            "failed",
-            str(e)
-        )
+    response = requests.post(
+        callback_url,
+        json=payload,
+        timeout=10
+    )
 
-        if callback_url:
-            send_failure_callback(
-                callback_url,
-                job_id,
-                str(e)
-            )
+    return response.status_code
